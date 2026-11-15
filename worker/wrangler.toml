@@ -11,3 +11,4 @@ GITHUB_BRANCH = "main"
 # Secrets — do NOT put these here. Set them with:
 #   wrangler secret put ADMIN_PASSWORD
 #   wrangler secret put GITHUB_TOKEN
+#   wrangler secret put GITHUB_TOKEN_UOA   (uoa-maud/otoscopy, for requests from uoa-maud.github.io)

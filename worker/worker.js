@@ -10,10 +10,14 @@
  * Required secrets/vars (set with `wrangler secret put ...`):
  *   ADMIN_PASSWORD   - the shared password supervisors enter on admin.html
  *   GITHUB_TOKEN     - a fine-grained PAT with Contents: read/write on the repo
+ *   GITHUB_TOKEN_UOA - same, for uoa-maud/otoscopy (used for requests from uoa-maud.github.io)
  *   GITHUB_OWNER     - e.g. "jakalnz"
  *   GITHUB_REPO      - e.g. "otoscopy-simulator"
  *   GITHUB_BRANCH    - e.g. "main"
  */
+
+const UOA_ORIGIN = "https://uoa-maud.github.io";
+const UOA_OWNER = "uoa-maud";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*", // tighten to your Pages origin in production
@@ -37,6 +41,18 @@ export default {
     const password = request.headers.get("X-Admin-Password") || "";
     if (password !== env.ADMIN_PASSWORD) {
       return json({ error: "Incorrect password" }, 401);
+    }
+
+    // Writes go to the repo that serves the site making the request:
+    // pages on uoa-maud.github.io commit to uoa-maud/otoscopy (token
+    // GITHUB_TOKEN_UOA); everything else keeps using GITHUB_OWNER/GITHUB_TOKEN
+    // (jakalnz) so the original site behaves exactly as before.
+    const origin = request.headers.get("Origin") || "";
+    if (origin === UOA_ORIGIN) {
+      if (!env.GITHUB_TOKEN_UOA) {
+        return json({ error: "Saving from uoa-maud.github.io is not set up yet (GITHUB_TOKEN_UOA missing)" }, 503);
+      }
+      env = { ...env, GITHUB_OWNER: UOA_OWNER, GITHUB_TOKEN: env.GITHUB_TOKEN_UOA };
     }
 
     const caseMatch = url.pathname.match(/^\/api\/case\/([^/]+)$/);
